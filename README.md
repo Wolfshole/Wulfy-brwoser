@@ -1,6 +1,6 @@
 # Wulfy-brwoser
 
-Dies ist der Webbrowser von mir ihr könnt ihr euch nun Runterladen under den Releases.
+Dies ist der Webbrowser von mir ihr könnt ihr euch nun Runterladen unter den Releases.
 
 # Support:
 
