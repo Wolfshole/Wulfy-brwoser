@@ -1,8 +1,11 @@
 {
   "name": "wulfy-browser",
-  "version": "1.0.0",
+  "version": "0.0.1-beta",
   "description": "🌐 Wulfy Browser - Ein moderner, schneller Web-Browser mit Chromium-Engine",
-  "author": "UEBlackWulfGHG",
+  "author": {
+    "name": "UEBlackWulfGHG",
+    "email": "jeremyklampt@gmail.com"
+  },
   "license": "MIT",
   "main": "dist/main.js",
   "type": "commonjs",
@@ -21,6 +24,7 @@
   "build": {
     "appId": "com.wulfy.browser",
     "productName": "Wulfy Browser",
+    "icon": "src/app-icon.png",
     "files": [
       "dist/**/*",
       "node_modules/**/*"
@@ -31,10 +35,10 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb",
-        "rpm"
+        "deb"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "maintainer": "UEBlackWulfGHG <jeremyklampt@gmail.com>"
     },
     "win": {
       "target": [
