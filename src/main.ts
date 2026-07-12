@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import isDev from 'electron-is-dev';
 import bookmarksManager from './bookmarks-manager';
@@ -34,60 +34,6 @@ const createWindow = () => {
   mainWindow.on('closed', () => {
     mainWindow = null as any;
   });
-
-  createMenu();
-};
-
-const createMenu = () => {
-  const template: any[] = [
-    {
-      label: 'Datei',
-      submenu: [
-        {
-          label: 'Neues Tab',
-          accelerator: 'CmdOrCtrl+T',
-          click: () => {
-            mainWindow.webContents.send('new-tab');
-          },
-        },
-        {
-          label: 'Beenden',
-          accelerator: 'CmdOrCtrl+Q',
-          click: () => {
-            app.quit();
-          },
-        },
-      ],
-    },
-    {
-      label: 'Bearbeiten',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-      ],
-    },
-    {
-      label: 'Ansicht',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-  ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
 };
 
 app.on('ready', createWindow);

@@ -4,9 +4,9 @@
   "description": "🌐 Wulfy Browser - Ein moderner, schneller Web-Browser mit Chromium-Engine",
   "author": {
     "name": "UEBlackWulfGHG",
-    "email": "jeremyklampt@gmail.com"
+    "email": "wulfghg@gmail.com"
   },
-  "license": "MIT",
+  "license": "Apache License",
   "main": "dist/main.js",
   "type": "commonjs",
   "scripts": {
@@ -35,10 +35,11 @@
     "linux": {
       "target": [
         "AppImage",
-        "deb"
+        "deb",
+        "rpm"
       ],
       "category": "Utility",
-      "maintainer": "UEBlackWulfGHG <jeremyklampt@gmail.com>"
+      "maintainer": "UEBlackWulfGHG <wulfghg@gmail.com>"
     },
     "win": {
       "target": [
