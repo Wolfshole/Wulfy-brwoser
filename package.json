@@ -16,9 +16,9 @@
     "copy-assets": "cp src/index.html dist/ && cp src/styles.css dist/ && cp src/app-icon.png dist/ && cp src/title-icon.png dist/",
     "electron-dev": "npm run copy-assets && electron .",
     "start": "npm run build-ts && npm run electron-dev",
-    "build": "npm run build-ts && electron-builder",
+    "build": "npm run build-ts && electron-builder --publish never",
     "pack": "electron-builder --dir",
-    "dist": "npm run build-ts && electron-builder",
+    "dist": "npm run build-ts && electron-builder --publish never",
     "prepare": "npm run build-ts"
   },
   "build": {

@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install Linux RPM tooling
@@ -39,6 +39,9 @@ jobs:
 
       - name: Build app
         run: npm run build
+
+      - name: Ensure release artifact publish is disabled for packaging job
+        run: echo "Packaging-only job; GitHub release publication happens in the dedicated release job."
 
       - name: Show generated artifacts
         shell: bash
@@ -77,6 +80,8 @@ jobs:
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
             release-assets/**/*.AppImage
