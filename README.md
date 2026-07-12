@@ -6,7 +6,3 @@ Dies ist der Webbrowser von mir ihr könnt ihr euch nun Runterladen unter den Re
 
 Support findet ihr auf den Discord Server: https://discord.gg/hSPPgDuRNf
 dies ist unteranderm auch der Community Server von mir also benhemt euch!
-
-# Disclaimer:
-
-Der Browser wird bis jetzt nur von Linux unterstützt!
