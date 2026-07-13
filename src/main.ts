@@ -1,262 +1,156 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import Store from 'electron-store';
 import path from 'path';
-import isDev from 'electron-is-dev';
-import bookmarksManager from './bookmarks-manager';
-import historyManager from './history-manager';
-import downloadsManager from './downloads-manager';
-import settingsManager from './settings-manager';
-import aiManager from './ai-manager';
+import os from 'os';
 
-let mainWindow: BrowserWindow;
+export type DownloadStatus =
+  | 'pending'
+  | 'progressing'
+  | 'paused'
+  | 'completed'
+  | 'interrupted'
+  | 'cancelled';
 
-const createWindow = () => {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    title: 'Wulfy Browser',
-    icon: path.join(__dirname, 'app-icon.png'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-      webviewTag: true,
-    },
-  });
+export interface Download {
+  id: string;
+  fileName: string;
+  filePath: string;
+  url: string;
+  fileSize?: number;
+  downloadedAt: number;
+  mimeType?: string;
+  progress: number;
+  status: DownloadStatus;
+  receivedBytes?: number;
+  totalBytes?: number;
+  speedBytesPerSec?: number;
+  canResume?: boolean;
+}
 
-  const startUrl = `file://${path.join(__dirname, 'index.html')}`;
+class DownloadsManager {
+  private store: Store;
+  private readonly DEFAULT_DOWNLOAD_PATH = path.join(os.homedir(), 'Downloads');
 
-  mainWindow.loadURL(startUrl);
-
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
+  constructor() {
+    this.store = new Store({
+      name: 'downloads',
+      defaults: {
+        downloads: [],
+        downloadPath: this.DEFAULT_DOWNLOAD_PATH,
+      },
+    });
   }
 
-  mainWindow.on('closed', () => {
-    mainWindow = null as any;
-  });
-};
+  addDownload(url: string, fileName: string, fileSize?: number, mimeType?: string): Download {
+    const downloadPath = this.getDownloadPath();
+    const filePath = path.join(downloadPath, fileName);
 
-app.on('ready', createWindow);
+    const download: Download = {
+      id: `dl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      fileName,
+      filePath,
+      url,
+      fileSize,
+      downloadedAt: Date.now(),
+      mimeType,
+      progress: 0,
+      status: 'pending',
+      receivedBytes: 0,
+      totalBytes: fileSize,
+      speedBytesPerSec: 0,
+      canResume: false,
+    };
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
+    const downloads = this.getDownloads();
+    downloads.unshift(download);
+    this.store.set('downloads', downloads);
+    return download;
   }
-});
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createWindow();
+  getDownloads(): Download[] {
+    return this.store.get('downloads', []) as Download[];
   }
-});
 
-// ===== BOOKMARKS IPC HANDLERS =====
-ipcMain.handle('bookmarks:add', async (_evt, title: string, url: string, favicon?: string) => {
-  return bookmarksManager.addBookmark(title, url, favicon);
-});
-
-ipcMain.handle('bookmarks:get', async (_evt, folder?: string) => {
-  return bookmarksManager.getBookmarks(folder);
-});
-
-ipcMain.handle('bookmarks:delete', async (_evt, bookmarkId: string) => {
-  return bookmarksManager.deleteBookmark(bookmarkId);
-});
-
-ipcMain.handle('bookmarks:update', async (_evt, bookmarkId: string, updates: any) => {
-  return bookmarksManager.updateBookmark(bookmarkId, updates);
-});
-
-ipcMain.handle('bookmarks:createFolder', async (_evt, name: string) => {
-  return bookmarksManager.createFolder(name);
-});
-
-ipcMain.handle('bookmarks:getFolders', async () => {
-  return bookmarksManager.getFolders();
-});
-
-ipcMain.handle('bookmarks:deleteFolder', async (_evt, folderId: string) => {
-  return bookmarksManager.deleteFolder(folderId);
-});
-
-ipcMain.handle('bookmarks:export', async () => {
-  return bookmarksManager.exportBookmarks();
-});
-
-ipcMain.handle('bookmarks:import', async (_evt, data: any) => {
-  bookmarksManager.importBookmarks(data);
-  return true;
-});
-
-// ===== HISTORY IPC HANDLERS =====
-ipcMain.handle('history:add', async (_evt, title: string, url: string, favicon?: string) => {
-  return historyManager.addVisit(title, url, favicon);
-});
-
-ipcMain.handle('history:get', async (_evt, limit?: number, search?: string) => {
-  return historyManager.getHistory(limit, search);
-});
-
-ipcMain.handle('history:getAll', async () => {
-  return historyManager.getAllHistory();
-});
-
-ipcMain.handle('history:delete', async (_evt, entryId: string) => {
-  return historyManager.deleteEntry(entryId);
-});
-
-ipcMain.handle('history:deleteUrl', async (_evt, url: string) => {
-  return historyManager.deleteUrl(url);
-});
-
-ipcMain.handle('history:clear', async () => {
-  historyManager.clearHistory();
-  return true;
-});
-
-ipcMain.handle('history:clearSince', async (_evt, since: number) => {
-  historyManager.clearHistorySince(since);
-  return true;
-});
-
-ipcMain.handle('history:getTopVisited', async (_evt, limit?: number) => {
-  return historyManager.getTopVisited(limit);
-});
-
-ipcMain.handle('history:getToday', async () => {
-  return historyManager.getTodayHistory();
-});
-
-ipcMain.handle('history:export', async () => {
-  return historyManager.exportHistory();
-});
-
-ipcMain.handle('history:import', async (_evt, entries: any) => {
-  historyManager.importHistory(entries);
-  return true;
-});
-
-// ===== DOWNLOADS IPC HANDLERS =====
-ipcMain.handle('downloads:add', async (_evt, fileName: string, url: string, fileSize?: number, mimeType?: string) => {
-  return downloadsManager.addDownload(fileName, url, fileSize, mimeType);
-});
-
-ipcMain.handle('downloads:get', async () => {
-  return downloadsManager.getDownloads();
-});
-
-ipcMain.handle('downloads:delete', async (_evt, downloadId: string) => {
-  return downloadsManager.deleteDownload(downloadId);
-});
-
-ipcMain.handle('downloads:clear', async () => {
-  downloadsManager.clearDownloads();
-  return true;
-});
-
-ipcMain.handle('downloads:getPath', async () => {
-  return downloadsManager.getDownloadPath();
-});
-
-ipcMain.handle('downloads:setPath', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory'],
-  });
-
-  if (!result.canceled && result.filePaths.length > 0) {
-    downloadsManager.setDownloadPath(result.filePaths[0]);
-    return result.filePaths[0];
+  getDownload(id: string): Download | undefined {
+    return this.getDownloads().find(d => d.id === id);
   }
-  return null;
-});
 
-ipcMain.handle('downloads:getByDate', async (_evt, days?: number) => {
-  return downloadsManager.getDownloadsByDate(days);
-});
+  /**
+   * Generisches Patch-Update — wird vom Download-Handler bei jedem
+   * 'updated'/'done' Event der Electron DownloadItem aufgerufen.
+   */
+  updateDownload(id: string, patch: Partial<Download>): void {
+    const downloads = this.getDownloads();
+    const index = downloads.findIndex(d => d.id === id);
+    if (index === -1) return;
 
-ipcMain.handle('downloads:getByMimeType', async (_evt, mimeType: string) => {
-  return downloadsManager.getDownloadsByMimeType(mimeType);
-});
+    downloads[index] = { ...downloads[index], ...patch };
 
-ipcMain.handle('downloads:export', async () => {
-  return downloadsManager.exportDownloads();
-});
+    // Fortschritt aus Bytes ableiten, falls vorhanden
+    const total = downloads[index].totalBytes;
+    const received = downloads[index].receivedBytes;
+    if (total && total > 0 && received !== undefined) {
+      downloads[index].progress = Math.min(100, Math.max(0, (received / total) * 100));
+    }
 
-ipcMain.handle('downloads:import', async (_evt, downloads: any) => {
-  downloadsManager.importDownloads(downloads);
-  return true;
-});
+    this.store.set('downloads', downloads);
+  }
 
-// ===== SETTINGS IPC HANDLERS =====
-ipcMain.handle('settings:getDefaultSearchEngine', async () => {
-  return settingsManager.getDefaultSearchEngine();
-});
+  /** @deprecated Nutze updateDownload({ receivedBytes, totalBytes }) */
+  updateDownloadProgress(id: string, progress: number, receivedBytes?: number, totalBytes?: number) {
+    this.updateDownload(id, {
+      progress: Math.min(100, Math.max(0, progress)),
+      receivedBytes,
+      totalBytes,
+      ...(progress >= 100 ? { status: 'completed' as DownloadStatus } : {}),
+    });
+  }
 
-ipcMain.handle('settings:setDefaultSearchEngine', async (_evt, engineId: string) => {
-  settingsManager.setDefaultSearchEngine(engineId);
-  return true;
-});
+  updateDownloadStatus(id: string, status: DownloadStatus) {
+    this.updateDownload(id, {
+      status,
+      ...(status === 'completed' ? { progress: 100 } : {}),
+    });
+  }
 
-ipcMain.handle('settings:getSearchEngines', async () => {
-  return settingsManager.getSearchEngines();
-});
+  cancelDownload(downloadId: string) {
+    this.updateDownloadStatus(downloadId, 'cancelled');
+  }
 
-ipcMain.handle('settings:getSearchEngineById', async (_evt, id: string) => {
-  return settingsManager.getSearchEngineById(id);
-});
+  deleteDownload(downloadId: string): boolean {
+    let downloads = this.getDownloads();
+    downloads = downloads.filter(d => d.id !== downloadId);
+    this.store.set('downloads', downloads);
+    return true;
+  }
 
-ipcMain.handle('settings:addCustomSearchEngine', async (_evt, name: string, url: string, icon?: string) => {
-  return settingsManager.addCustomSearchEngine(name, url, icon);
-});
+  clearDownloads(): void {
+    this.store.set('downloads', []);
+  }
 
-ipcMain.handle('settings:deleteSearchEngine', async (_evt, engineId: string) => {
-  return settingsManager.deleteSearchEngine(engineId);
-});
+  getDownloadPath(): string {
+    return this.store.get('downloadPath', this.DEFAULT_DOWNLOAD_PATH) as string;
+  }
 
-ipcMain.handle('settings:getHomepage', async () => {
-  return settingsManager.getHomepage();
-});
+  setDownloadPath(newPath: string): void {
+    this.store.set('downloadPath', newPath);
+  }
 
-ipcMain.handle('settings:setHomepage', async (_evt, url: string) => {
-  settingsManager.setHomepage(url);
-  return true;
-});
+  getDownloadsByDate(days: number = 30): Download[] {
+    const since = Date.now() - days * 24 * 60 * 60 * 1000;
+    return this.getDownloads().filter(d => d.downloadedAt >= since);
+  }
 
-ipcMain.handle('settings:getTheme', async () => {
-  return settingsManager.getTheme();
-});
+  getDownloadsByMimeType(mimeType: string): Download[] {
+    return this.getDownloads().filter(d => d.mimeType === mimeType);
+  }
 
-ipcMain.handle('settings:setTheme', async (_evt, theme: string) => {
-  settingsManager.setTheme(theme);
-  return true;
-});
+  exportDownloads(): Download[] {
+    return this.getDownloads();
+  }
 
-ipcMain.handle('settings:getAIConfig', async () => {
-  return settingsManager.getAIConfig();
-});
+  importDownloads(downloads: Download[]): void {
+    this.store.set('downloads', downloads);
+  }
+}
 
-ipcMain.handle('settings:setAIConfig', async (_evt, config: any) => {
-  settingsManager.setAIConfig(config);
-  return true;
-});
-
-ipcMain.handle('ai:createConversation', async () => {
-  return aiManager.createConversation();
-});
-
-ipcMain.handle('ai:processMessage', async (_evt, message: string) => {
-  return aiManager.processMessage(message);
-});
-
-ipcMain.handle('ai:getHistory', async () => {
-  return aiManager.getConversationHistory();
-});
-
-ipcMain.handle('ai:clearHistory', async () => {
-  return aiManager.clearConversationHistory();
-});
-
-ipcMain.handle('ai:addKnowledge', async (_evt, entry: string) => {
-  aiManager.addKnowledge(entry);
-  return true;
-});
+export default new DownloadsManager();
